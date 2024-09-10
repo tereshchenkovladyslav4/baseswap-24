@@ -1,45 +1,67 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+# BaseSwap: Info
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+A brief overview how Info part of BaseSwap website works.
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
+## Table of Contents
 
----
+- [Project Overview](#Code-structure)
+- [Features](#Requests-flow)
+- [Technologies](#Installation)
 
-## Edit a file
+## Code structure
 
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
+In terms of React components Info section is just another view (located in [client/src/views/Info](../client/src/views/Info)) that is assigned route (in [App.tsx](../client/src/App.tsx)).  
+There are also some Info-related components inside [client/src/components](../client/src/components) (InfoNav, InfoCharts, InfoTables and InfoSearch at the time of writing).
 
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
+There are helper functions to handle data formatting and requests - [client/src/utils/infoDataHelpers.ts](../client/src/utils/infoDataHelpers.ts) and [client/src/utils/infoQueryHelpers.ts](../client/src/utils/infoQueryHelpers.ts)
 
----
+Info section has it's own reducer in Redux store - [client/src/state/info](../client/src/state/info). It handles all data about pools, tokens and overall protocol. The only exception is token/pool watchlist that is stored under [client/src/state/user](../client/src/state/user) reducer.
 
-## Create a file
+GraphQL request logic lives under [client/src/state/info/queries](../client/src/state/info/queries) directory. Code over there handles firing requests to StreamingFast subgraph as well as formatting returned values and calculating all the derived data we need.
 
-Next, you’ll add a new file to this repository.
+## Requests flow
 
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
+When user visits Info page the following requests are fired (names as declared in [client/src/state/info/queries](../client/src/state/info/queries)):
 
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
+`overview` - gets basic protocol data like volume, liquidity and transaction count. 3 requests are fired for current, 24h ago and 48h ago data.  
+`overviewCharts` - gets data to show liquidity and volume charts on overview page.  
+`overviewTransactions` - gets data to show transaction table on overview page
 
----
+`prices` - gets BNB prices (current, 24h, 48 and 7d ago) used in calculations (see [client/src/hooks/useBnbPrices.ts](../client/src/hooks/useBnbPrices.ts))
 
-## Clone a repository
+`topTokens` - gets top NN pools by 24h volume. This request just fetches token addresses, full data is handled separately.
+`tokens` - given the list of token addresses retrieves all needed data about these tokens. Done in single request but it is in fact 5 batched requests for different timeframes (needed to calculate rate of change). When user first opens the page this request is requesting data for token addresses acquired via `topTokens` request.
 
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
+`topPools` - same as `topTokens` but for pools
+`pools` - same as `tokens` but for pools
 
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
+There are also multiple `blocks` queries to retrieve block numbers at different timestamps.
 
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+The flow is controlled by [client/src/state/info/updaters.ts](../client/src/state/info/updaters.ts). When user navigates through the site more pools and tokens are automatically loaded, (e.g. you click on BNB token and pools for BNB are loaded automatically, if you click on BNB-BTCB then BTCB token will be loaded, etc)
+
+There are additional requests for price chart and search that are fired when user uses these features.
+
+## Installation
+
+1. Clone the repository
+
+```bash
+git clone https://devblockchain116-admin@bitbucket.org/base116/baseswap-24.git
+```
+2. Go to the project directory and install dependencies for both the client and server
+
+```bash
+cd client
+npm install
+```
+
+```bash
+cd ..
+npm install
+```
+
+3. Start the project
+
+```bash
+npm start
+```
